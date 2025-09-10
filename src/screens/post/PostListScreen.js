@@ -18,7 +18,7 @@ export default function PostListScreen({ navigation }) {
   const [hasMore, setHasMore] = useState(true);
 
   const fetchPosts = async (pageNumber = 1, isRefresh = false) => {
-    if (loading) return; 
+    if (loading) return;
     try {
       setLoading(true);
       const url = `https://jsonplaceholder.typicode.com/posts?_limit=10&_page=${pageNumber}`;
@@ -27,7 +27,14 @@ export default function PostListScreen({ navigation }) {
 
       if (data.length < 10) setHasMore(false);
 
-      setPosts((prev) => (isRefresh ? data : [...prev, ...data]));
+      setPosts((prev) => {
+        const updated = isRefresh ? data : [...prev, ...data];
+     
+        return updated.filter(
+          (post, index, self) => index === self.findIndex((p) => p.id === post.id)
+        );
+      });
+
       setPage(pageNumber);
     } catch (e) {
       console.error("Failed to fetch posts:", e);
@@ -37,7 +44,7 @@ export default function PostListScreen({ navigation }) {
   };
 
   useEffect(() => {
-    fetchPosts(1, true); 
+    fetchPosts(1, true);
   }, []);
 
   const onRefresh = useCallback(async () => {
@@ -56,6 +63,9 @@ export default function PostListScreen({ navigation }) {
       style={styles.card}
       onPress={() => navigation.navigate("Details", { post: item })}
     >
+      <Text style={styles.cardTitle}>
+        {`User: ${item.userId} | ID: ${item.id}`}
+      </Text>
       <Text style={styles.cardTitle}>{item.title}</Text>
       <Text style={styles.cardBody} numberOfLines={2}>
         {item.body}
@@ -68,7 +78,7 @@ export default function PostListScreen({ navigation }) {
       <Header title="API Posts" />
       <FlatList
         data={posts}
-        keyExtractor={(item) => String(item.id)}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         renderItem={renderItem}
         contentContainerStyle={{ padding: 16 }}
         refreshControl={
